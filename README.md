@@ -1,5 +1,8 @@
 # OjosPerezosos
 
+[![HF Space](https://img.shields.io/badge/HuggingFace-Live-blue)](https://huggingface.co/spaces/XMRTDAO/ojosperezosos)
+[![AMD Hackathon](https://img.shields.io/badge/AMD-Hackathon-red)](https://lablab.ai/event/amd-developer-hackathon)
+
 [![HF Space](https://img.shields.io/badge/HuggingFace-Space-blue)](https://huggingface.co/spaces/XMRTDAO/ojosperezosos)
 
 **Neuroplasticity-Based Amblyopia (Lazy Eye) Treatment via AI**
