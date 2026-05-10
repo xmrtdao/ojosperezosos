@@ -1,15 +1,11 @@
 # OjosPerezosos
 
-[![HF Space](https://img.shields.io/badge/HuggingFace-Live-blue)](https://huggingface.co/spaces/XMRTDAO/ojosperezosos)
+[![🤗 HF Space](https://img.shields.io/badge/🤗%20HF%20Space-blue)](https://huggingface.co/spaces/XMRTDAO/ojosperezosos)
 [![AMD Hackathon](https://img.shields.io/badge/AMD-Hackathon-red)](https://lablab.ai/event/amd-developer-hackathon)
-
-[![HF Space](https://img.shields.io/badge/HuggingFace-Space-blue)](https://huggingface.co/spaces/XMRTDAO/ojosperezosos)
-
 **Neuroplasticity-Based Amblyopia (Lazy Eye) Treatment via AI**
 
 [![AMD Developer Hackathon](https://img.shields.io/badge/AMD-Hackathon%202026-ED1C24?logo=amd)](https://lablab.ai/ai-hackathons/amd-developer)
 [![Track](https://img.shields.io/badge/Track-Vision%20%26%20Multimodal%20AI-blueviolet)]()
-[![Hugging Face](https://img.shields.io/badge/HuggingFace-Space-yellow?logo=huggingface)](https://huggingface.co/spaces/xmrtdao/ojosperezosos)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > **"Ojos perezosos"** means *lazy eyes* in Spanish.  
