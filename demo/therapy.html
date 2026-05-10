@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OjosPerezosos — Amblyopia Therapy</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --panel: #1a1a2e;
+    --text: #e0e0e0;
+    --accent: #ff3e3e;
+    --success: #00c853;
+    --warn: #ffd600;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 { font-size: 2rem; color: var(--accent); }
+  header p { opacity:0.7; }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    gap: 20px;
+    width: 100%; max-width: 1400px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .panel h3 { font-size: 1rem; color: var(--warn); margin-bottom: 4px; }
+
+  video, canvas { border-radius: 8px; background: #000; width: 100%; }
+
+  button {
+    padding: 10px 16px; border: none; border-radius: 8px;
+    background: var(--accent); color:#fff; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity:.4; cursor: not-allowed; }
+  button:hover:not(:disabled) { opacity:.9; }
+
+  .progress-bar {
+    height: 8px; background: #333; border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; width: 0%; background: var(--success); transition: width .5s ease; }
+
+  .hidden { display: none !important; }
+
+  #gameCanvas {
+    width: 100%; max-width: 800px; aspect-ratio: 16/10;
+    background: #000; border-radius: 8px;
+  }
+
+  #calibrationOverlay {
+    position: fixed; inset:0; background: rgba(0,0,0,.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  #calibrationOverlay .dot {
+    width: 20px; height: 20px; background: var(--accent); border-radius: 50%;
+    position: absolute; transition: all 0.3s ease;
+  }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-box { background: #0003; padding: 8px; border-radius: 6px; text-align:center; }
+  .stat-label { font-size:.75rem; opacity:.6; }
+  .stat-value { font-size:1.1rem; font-weight:700; }
+
+  @media(max-width: 1100px){
+    .main-grid { grid-template-columns: 1fr; }
+    .panel { max-height: unset; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>OjosPerezosos</h1>
+  <p>Neuroplasticity-based amblyopia therapy using your webcam</p>
+</header>
+
+<div class="main-grid">
+
+  <!-- Left Panel: Camera + Eye Tracking -->
+  <div class="panel">
+    <h3>Your Eyes</h3>
+    <video id="webcam" autoplay playsinline muted width="280" height="210"></video>
+    <canvas id="eyeCanvas" width="280" height="210"></canvas>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Dominant Eye</div>
+        <div class="stat-value" id="dominantEye">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Gaze Stability</div>
+        <div class="stat-value" id="gazeStability">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Today's Time</div>
+        <div class="stat-value" id="sessionTime">0m</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Compliance</div>
+        <div class="stat-value" id="compliance">0%</div>
+      </div>
+    </div>
+    <button id="startBtn">Start Calibration</button>
+    <button id="stopBtn" disabled>Stop Session</button>
+  </div>
+
+  <!-- Center Panel: Dichoptic Game Canvas -->
+  <div class="panel">
+    <h3>Dichoptic Training</h3>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div id="gameControls" class="hidden" style="display:flex; gap:8px; justify-content:center;">
+      <button id="pauseBtn">Pause</button>
+      <button id="nextExerciseBtn">Next Exercise</button>
+    </div>
+    <div id="gameInfo" style="text-align:center; opacity:.7;">
+      Start calibration to begin your personalized amblyopia therapy session.
+    </div>
+  </div>
+
+  <!-- Right Panel: Progress + Settings -->
+  <div class="panel">
+    <h3>Settings</h3>
+    <label>Amblyopic Eye</label>
+    <select id="weakEye">
+      <option value="auto">Auto-detect</option>
+      <option value="left">Left Eye</option>
+      <option value="right">Right Eye</option>
+    </select>
+    <label>Contrast Ratio (Strong:Weak)</label>
+    <input type="range" id="contrastRatio" min="0.1" max="1.0" step="0.05" value="0.3">
+    <div style="display:flex; justify-content:space-between; font-size:.8rem; opacity:.6;">
+      <span>Equalize</span><span id="ratioLabel">30%</span><span>Full suppression</span>
+    </div>
+    <label>Session Duration</label>
+    <input type="range" id="sessionDuration" min="5" max="45" step="5" value="20">
+    <span id="durationLabel" style="font-size:.8rem; opacity:.6;">20 minutes</span>
+
+    <h3 style="margin-top:12px;">Progress</h3>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <p style="font-size:.8rem; opacity:.6; margin-top:4px;">Streak: <strong id="streakCount">0</strong> days</p>
+    <p style="font-size:.8rem; opacity:.6;">Gain: <strong id="acuityGain">—</strong> logMAR</p>
+
+    <h3 style="margin-top:12px;">Today's Exercises</h3>
+    <ul id="exerciseList" style="font-size:.85rem; opacity:.8; padding-left:16px; line-height:1.6;">
+      <li>Waiting for calibration...</li>
+    </ul>
+
+    <button id="exportBtn" style="margin-top:auto;">Export Progress CSV</button>
+  </div>
+
+</div>
+
+<!-- Calibration Overlay -->
+<div id="calibrationOverlay" class="hidden">
+  <h2 style="color:#fff; margin-bottom:20px;">Calibrating Eye Tracking</h2>
+  <p style="color:#aaa; margin-bottom:40px;">Look at the red dot as it moves. Keep your head steady.</p>
+  <div class="dot" id="calDot" style="left:50%; top:50%; transform:translate(-50%,-50%);"></div>
+  <div style="position:absolute; bottom:40px; color:#666;" id="calProgress">0 / 9 points</div>
+</div>
+
+<script>
+const webcam = document.getElementById('webcam');
+const eyeCanvas = document.getElementById('eyeCanvas');
+const gameCanvas = document.getElementById('gameCanvas');
+const gCtx = gameCanvas.getContext('2d');
+const eCtx = eyeCanvas.getContext('2d');
+
+let stream = null;
+let sessionRunning = false;
+let sessionStart = 0;
+let sessionTimer = null;
+let exercises = [];
+let currentExercise = 0;
+let eyeData = { left: [], right: [] };
+let calibrationPoints = [];
+
+// DOM refs
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const weakEye = document.getElementById('weakEye');
+const contrastRatio = document.getElementById('contrastRatio');
+const ratioLabel = document.getElementById('ratioLabel');
+const sessionDuration = document.getElementById('sessionDuration');
+const durationLabel = document.getElementById('durationLabel');
+
+contrastRatio.addEventListener('input', e => {
+  ratioLabel.textContent = Math.round(e.target.value * 100) + '%';
+});
+sessionDuration.addEventListener('input', e => {
+  durationLabel.textContent = e.target.value + ' minutes';
+});
+
+async function initCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    webcam.srcObject = stream;
+    await webcam.play();
+  } catch (err) {
+    alert('Webcam access denied. OjosPerezosos requires a front-facing camera for eye tracking.');
+  }
+}
+
+initCamera();
+
+// Simple face mesh simulation (mock for demo; integrate MediaPipe in production)
+function drawEyeOverlay() {
+  eCtx.clearRect(0, 0, eyeCanvas.width, eyeCanvas.height);
+  eCtx.drawImage(webcam, 0, 0, eyeCanvas.width, eyeCanvas.height);
+
+  // Draw eye positions (simulated if no face tracking API)
+  const cx = eyeCanvas.width / 2;
+  const cy = eyeCanvas.height / 2;
+  const time = Date.now() / 1000;
+
+  // Eye landmarks (simulated oscillation for demo)
+  const lx = cx - 40 + Math.sin(time) * 5;
+  const ly = cy - 10 + Math.cos(time * 0.7) * 3;
+  const rx = cx + 40 + Math.sin(time * 0.9) * 5;
+  const ry = cy - 10 + Math.cos(time * 0.6) * 3;
+
+  eCtx.fillStyle = '#0f0';
+  eCtx.beginPath(); eCtx.arc(lx, ly, 4, 0, Math.PI*2); eCtx.fill();
+  eCtx.beginPath(); eCtx.arc(rx, ry, 4, 0, Math.PI*2); eCtx.fill();
+
+  // Crosshairs
+  eCtx.strokeStyle = '#0f0';
+  eCtx.lineWidth = 1;
+  eCtx.beginPath(); eCtx.moveTo(lx-8, ly); eCtx.lineTo(lx+8, ly); eCtx.stroke();
+  eCtx.beginPath(); eCtx.moveTo(lx, ly-8); eCtx.lineTo(lx, ly+8); eCtx.stroke();
+  eCtx.beginPath(); eCtx.moveTo(rx-8, ry); eCtx.lineTo(rx+8, ry); eCtx.stroke();
+  eCtx.beginPath(); eCtx.moveTo(rx, ry-8); eCtx.lineTo(rx, ry+8); eCtx.stroke();
+
+  // Gaze vector
+  const gx = cx + Math.sin(time * 0.3) * 20;
+  const gy = cy + Math.cos(time * 0.3) * 10;
+  eCtx.strokeStyle = '#ff3e3e';
+  eCtx.lineWidth = 2;
+  eCtx.beginPath(); eCtx.moveTo(cx, cy); eCtx.lineTo(gx, gy); eCtx.stroke();
+  eCtx.beginPath(); eCtx.arc(gx, gy, 6, 0, Math.PI*2); eCtx.stroke();
+
+  requestAnimationFrame(drawEyeOverlay);
+}
+requestAnimationFrame(drawEyeOverlay);
+
+// Calibration flow
+startBtn.addEventListener('click', async () => {
+  startBtn.disabled = true;
+  await runCalibration();
+  await startSession();
+});
+
+async function runCalibration() {
+  const overlay = document.getElementById('calibrationOverlay');
+  overlay.classList.remove('hidden');
+  const dot = document.getElementById('calDot');
+  const progress = document.getElementById('calProgress');
+
+  const positions = [
+    {x: 50, y: 50}, {x: 50, y: 50}, {x: 50, y: 50},
+    {x: 50, y: 20}, {x: 50, y: 80},
+    {x: 20, y: 50}, {x: 80, y: 50},
+    {x: 20, y: 20}, {x: 80, y: 80}
+  ];
+
+  for (let i = 0; i < positions.length; i++) {
+    dot.style.left = positions[i].x + '%';
+    dot.style.top = positions[i].y + '%';
+    progress.textContent = `${i+1} / ${positions.length} points`;
+    await new Promise(r => setTimeout(r, 1200));
+  }
+
+  overlay.classList.add('hidden');
+
+  // Detect dominant eye (mock for demo)
+  const detected = Math.random() > 0.5 ? 'Right' : 'Left';
+  document.getElementById('dominantEye').textContent = detected;
+  document.getElementById('gazeStability').textContent = (85 + Math.random()*12).toFixed(1) + '%';
+}
+
+async function startSession() {
+  sessionRunning = true;
+  stopBtn.disabled = false;
+  document.getElementById('gameControls').classList.remove('hidden');
+  document.getElementById('gameInfo').textContent = 'Session started! Follow the dot with your eyes.';
+
+  sessionStart = Date.now();
+  const targetMin = parseInt(sessionDuration.value);
+  const targetMs = targetMin * 60 * 1000;
+
+  // Build exercise queue
+  exercises = getExercises();
+  renderExerciseList();
+  currentExercise = 0;
+  startExercise(currentExercise);
+
+  sessionTimer = setInterval(() => {
+    const elapsed = Date.now() - sessionStart;
+    const minutes = Math.floor(elapsed / 60000);
+    document.getElementById('sessionTime').textContent = minutes + 'm';
+    document.getElementById('compliance').textContent = Math.min(100, Math.round(elapsed / targetMs * 100)) + '%';
+    document.getElementById('progressFill').style.width = Math.min(100, elapsed / targetMs * 100) + '%';
+
+    if (elapsed >= targetMs) {
+      endSession('Target time reached!');
+    }
+  }, 5000);
+}
+
+function getExercises() {
+  return [
+    { name: 'Fixation Stability', type: 'gaze', duration: 120 },
+    { name: 'Saccade Tracking', type: 'follow', duration: 120 },
+    { name: 'Gabor Contrast Match', type: 'gabor', duration: 180 },
+    { name: 'Pursuit Smoothness', type: 'smooth', duration: 120 },
+    { name: 'Dichoptic Gap Task', type: 'vernier', duration: 180 }
+  ];
+}
+
+function renderExerciseList() {
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = exercises.map((ex, i) =>
+    `<li>${i+1}. ${ex.name} (${ex.duration}s) ${i===0 ? '← current' : ''}</li>`
+  ).join('');
+}
+
+function startExercise(idx) {
+  const ex = exercises[idx];
+  if (!ex) return;
+  document.getElementById('gameInfo').textContent = `${ex.name} — ${ex.duration}s`;
+  gameLoop(ex.type, ex.duration);
+}
+
+// Game canvas rendering loop
+let gameLoopId = null;
+let exerciseStart = 0;
+
+function gameLoop(type, duration) {
+  exerciseStart = Date.now();
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+
+  const strongContrast = parseFloat(contrastRatio.value); // strong eye gets LESS contrast
+  const weakContrast = 1.0;
+
+  let t = 0;
+  function frame() {
+    const elapsed = (Date.now() - exerciseStart) / 1000;
+    t += 0.016;
+    if (elapsed >= duration) {
+      nextExercise();
+      return;
+    }
+
+    gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+    const w = gameCanvas.width;
+    const h = gameCanvas.height;
+    const weakEyeSide = weakEye.value === 'left' ? 0 : (weakEye.value === 'right' ? 1 : Math.random() > 0.5 ? 1 : 0);
+
+    // Background
+    gCtx.fillStyle = '#fff'; gCtx.fillRect(0, 0, w, h);
+
+    if (type === 'gaze' || type === 'follow') {
+      // Target dot moves in figure-8
+      const px = w/2 + Math.sin(t) * 200;
+      const py = h/2 + Math.sin(t*2) * 100;
+
+      // Left eye view
+      gCtx.save();
+      gCtx.beginPath(); gCtx.rect(0, 0, w/2, h); gCtx.clip();
+      gCtx.fillStyle = weakEyeSide === 0 ? `rgba(255,0,0,${weakContrast})` : `rgba(50,50,50,${strongContrast})`;
+      gCtx.beginPath(); gCtx.arc(px, py, 20, 0, Math.PI*2); gCtx.fill();
+      gCtx.restore();
+
+      // Right eye view
+      gCtx.save();
+      gCtx.beginPath(); gCtx.rect(w/2, 0, w/2, h); gCtx.clip();
+      gCtx.fillStyle = weakEyeSide === 1 ? `rgba(0,0,255,${weakContrast})` : `rgba(50,50,50,${strongContrast})`;
+      gCtx.beginPath(); gCtx.arc(px, py, 20, 0, Math.PI*2); gCtx.fill();
+      gCtx.restore();
+
+      // Divider line
+      gCtx.strokeStyle = '#000'; gCtx.lineWidth = 2;
+      gCtx.beginPath(); gCtx.moveTo(w/2, 0); gCtx.lineTo(w/2, h); gCtx.stroke();
+
+      gCtx.fillStyle = '#000'; gCtx.font = '14px sans-serif';
+      gCtx.fillText(type === 'gaze' ? 'Hold gaze on center' : 'Follow the dot', 10, 20);
+    }
+    else if (type === 'gabor') {
+      // Gabor patch contrast detection
+      const patchX = w/2;
+      const patchY = h/2;
+      const spatialFreq = 0.1 + elapsed / duration * 0.2;
+
+      // Left eye (maybe weak)
+      drawGabor(gCtx, 0, w/2, h, patchX, patchY, spatialFreq, weakEyeSide === 0 ? weakContrast : strongContrast);
+      // Right eye
+      drawGabor(gCtx, w/2, w/2, h, patchX, patchY, spatialFreq, weakEyeSide === 1 ? weakContrast : strongContrast);
+
+      gCtx.strokeStyle = '#000'; gCtx.lineWidth = 2;
+      gCtx.beginPath(); gCtx.moveTo(w/2, 0); gCtx.lineTo(w/2, h); gCtx.stroke();
+      gCtx.fillStyle = '#000'; gCtx.font = '14px sans-serif';
+      gCtx.fillText('Match the contrast. Which side is clearer?', 10, 20);
+    }
+    else if (type === 'vernier') {
+      // Vernier gap detection
+      const offset = Math.sin(t * 3) * 3;
+      const lineY = h/2;
+
+      // Left eye
+      gCtx.save(); gCtx.beginPath(); gCtx.rect(0, 0, w/2, h); gCtx.clip();
+      gCtx.strokeStyle = weakEyeSide === 0 ? `rgba(255,0,0,${weakContrast})` : `rgba(30,30,30,${strongContrast})`;
+      gCtx.lineWidth = 4;
+      gCtx.beginPath(); gCtx.moveTo(0, lineY); gCtx.lineTo(w/2 - 2, lineY); gCtx.stroke();
+      gCtx.restore();
+
+      // Right eye
+      gCtx.save(); gCtx.beginPath(); gCtx.rect(w/2, 0, w/2, h); gCtx.clip();
+      gCtx.strokeStyle = weakEyeSide === 1 ? `rgba(0,0,255,${weakContrast})` : `rgba(30,30,30,${strongContrast})`;
+      gCtx.beginPath(); gCtx.moveTo(w/2 + 2 + offset, lineY - 60); gCtx.lineTo(w/2 + 2 + offset, lineY + 60); gCtx.stroke();
+      gCtx.beginPath(); gCtx.moveTo(w/2 + 2, lineY);        gCtx.lineTo(w, lineY); gCtx.stroke();
+      gCtx.restore();
+
+      gCtx.fillStyle = '#000'; gCtx.font = '14px sans-serif';
+      gCtx.fillText('Align the lines with your gaze', 10, 20);
+    }
+    else {
+      gCtx.fillStyle = '#000'; gCtx.font = '20px sans-serif';
+      gCtx.fillText(type + ' exercise — ' + (duration - elapsed).toFixed(0) + 's', 20, h/2);
+    }
+
+    gameLoopId = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawGabor(ctx, xOff, cw, ch, cx, cy, freq, contrast) {
+  ctx.save();
+  ctx.beginPath(); ctx.rect(xOff, 0, cw, ch); ctx.clip();
+  const imgData = ctx.createImageData(cw, ch);
+  const sigma = 30;
+  for (let y=0; y<ch; y++) {
+    for (let x=0; x<cw; x++) {
+      const dx = x + xOff - cx;
+      const dy = y - cy;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const gaussian = Math.exp(-(d*d)/(2*sigma*sigma));
+      const sinusoid = Math.sin(2*Math.PI*freq*(dx*Math.cos(0) + dy*Math.sin(0)));
+      const intensity = 128 + 127 * gaussian * sinusoid * contrast;
+      const idx = (y * cw + x) * 4;
+      imgData.data[idx] = intensity;
+      imgData.data[idx+1] = intensity;
+      imgData.data[idx+2] = intensity;
+      imgData.data[idx+3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, xOff, 0);
+  ctx.restore();
+}
+
+function nextExercise() {
+  currentExercise++;
+  if (currentExercise >= exercises.length) {
+    currentExercise = 0; // Loop
+  }
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  renderExerciseList();
+  startExercise(currentExercise);
+}
+
+document.getElementById('nextExerciseBtn').addEventListener('click', nextExercise);
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  if (gameLoopId) {
+    cancelAnimationFrame(gameLoopId);
+    gameLoopId = null;
+    document.getElementById('pauseBtn').textContent = 'Resume';
+  } else {
+    startExercise(currentExercise);
+    document.getElementById('pauseBtn').textContent = 'Pause';
+  }
+});
+
+stopBtn.addEventListener('click', () => endSession('Session stopped by user'));
+
+function endSession(reason) {
+  sessionRunning = false;
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  clearInterval(sessionTimer);
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  document.getElementById('gameControls').classList.add('hidden');
+  document.getElementById('gameInfo').textContent = reason || 'Session complete!';
+}
+
+// Export progress
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = `date,time_minutes,dominant_eye,gaze_stability\n${new Date().toISOString()},${Math.round((Date.now()-sessionStart)/60000)},${document.getElementById('dominantEye').textContent},${document.getElementById('gazeStability').textContent}`;
+  const blob = new Blob([data], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ojosperezosos-progress.csv';
+  a.click(); URL.revokeObjectURL(url);
+});
+
+// Responsive canvas sizing
+function resizeCanvas() {
+  const rect = gameCanvas.getBoundingClientRect();
+  gameCanvas.width = rect.width;
+  gameCanvas.height = rect.height;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+</script>
+</body>
+</html>

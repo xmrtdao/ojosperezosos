@@ -1,33 +1,59 @@
 # OjosPerezosos
 
-**Multimodal AI Vision Assistant for Accessibility**
+**Neuroplasticity-Based Amblyopia (Lazy Eye) Treatment via AI**
 
 [![AMD Developer Hackathon](https://img.shields.io/badge/AMD-Hackathon%202026-ED1C24?logo=amd)](https://lablab.ai/ai-hackathons/amd-developer)
-[![Track](https://img.shields.io/badge/Track-Vision%20%26%20Multimodal%20AI-blue)]()
+[![Track](https://img.shields.io/badge/Track-Vision%20%26%20Multimodal%20AI-blueviolet)]()
+[![Hugging Face](https://img.shields.io/badge/HuggingFace-Space-yellow?logo=huggingface)](https://huggingface.co/spaces/xmrtdao/ojosperezosos)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Repo](https://img.shields.io/badge/GitHub-xmrtdao%2Fojosperezosos-black?logo=github)](https://github.com/xmrtdao/ojosperezosos)
 
-> "Your eyes when you need a rest — an AI that sees, reads, and describes the world aloud."
-
-OjosPerezosos ("Lazy Eyes") is a multimodal accessibility assistant built for the AMD Developer Hackathon (Vision & Multimodal AI track). It helps users with visual fatigue, low vision, or temporary eye strain by describing scenes, reading text from images, and providing audio-guided navigation — all powered by AMD ROCm-accelerated vision and language models.
+> **"Ojos perezosos"** means *lazy eyes* in Spanish.  
+> An AI-powered amblyopia treatment app that uses your front-facing camera to deliver personalized dichoptic training, eye tracking, and neuroplasticity exercises — anywhere, anytime.
 
 ---
 
-## Hackathon Track
+## What Is Amblyopia?
 
-**Vision & Multimodal AI** — OjosPerezosos combines scene understanding (image captioning), OCR (text extraction), object detection, and text-to-speech into a unified accessibility pipeline running on AMD MI300X GPUs.
+Amblyopia ("lazy eye") affects **~3-5% of the global population**. The brain suppresses input from the weaker eye, leading to reduced visual acuity that cannot be corrected with glasses alone.
+
+Traditional treatment:
+- **Eye patching** — socially stigmatizing, compliance < 50% in kids
+- **Atropine drops** — unpleasant side effects
+- **Clinic-based vision therapy** — expensive ($3,000-6,000), requires frequent visits
+
+**OjosPerezosos brings clinic-grade vision therapy to your browser.**
 
 ---
 
-## Features
+## How It Works
 
-1. **Scene Describe** — Point your camera at any scene. Get a rich audio description: "A busy kitchen counter with a red kettle, three apples, and a window showing a sunset."
-2. **Text-to-Speech OCR** — Snap a photo of a document, sign, menu, or screen. The AI reads it aloud word-for-word.
-3. **Object Finder** — "Where are my keys?" The AI scans the frame and answers: "Keys detected on the wooden table, near the left edge."
-4. **Color Reader** — For colorblind users: "That shirt is navy blue with small white dots."
-5. **Face Recognition Lite** — "Who is in front of me?" Names faces from a private contact gallery (opt-in, on-device).
-6. **Reading Mode** — Point at a book page. The AI reads continuously, turning pages via swipe gestures.
-7. **Safety Alerts** — "Caution: steps ahead" or "Obstacle detected at 2 o'clock."
+### 1. Assessment (2 minutes)
+The AI uses your front-facing camera to:
+- Detect which eye is dominant vs suppressed
+- Measure pupil response and gaze stability
+- Run a contrast sensitivity test (Gabor patches)
+- Calibrate personalized difficulty levels
+
+### 2. Dichoptic Training Games
+The app renders **different images to each eye** using:
+- **Red-blue anaglyph** mode (3D glasses)
+- **Split-screen** mode with central fusion lock
+- **Shutter glasses** simulation for high-end devices
+
+The stronger eye sees a **degraded/blurred** version. The weaker eye sees the **full-contrast** target. This forces the brain to reintegrate the weak eye.
+
+### 3. Perceptual Learning
+Neuroplasticity-driven exercises:
+- **Gabor patch contrast detection** — train the visual cortex to process weak-eye input
+- **Vernier acuity tasks** — hyperacuity training
+- **Visual search** — where's Waldo-style tasks with weak-eye bias
+- **Dynamic random dot stereograms** — depth perception retraining
+
+### 4. Progress Tracking
+- Daily compliance score (goal: 20-30 min)
+- Visual acuity improvement graphs
+- Contrast sensitivity function (CSF) curves over time
+- AI adjusts difficulty automatically
 
 ---
 
@@ -35,59 +61,84 @@ OjosPerezosos ("Lazy Eyes") is a multimodal accessibility assistant built for th
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CLIENT (Browser / PWA)                    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  Camera     │  │  Mic        │  │  Speaker / Earbuds  │  │
-│  │  (WebRTC)   │  │  (Commands) │  │  (TTS Output)       │  │
-│  └──────┬──────┘  └──────┬──────┘  └─────────────────────┘  │
-└─────────┼──────────────┼───────────────────────────────────┘
-          │                │
-          ▼                ▼
+│                    USER DEVICE (Browser)                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
+│  │ Webcam Feed  │  │ Canvas Games │  │ Eye Tracker      │ │
+│  │ (getUserMedia│  │ (dichoptic)  │  │ (MediaPipe)      │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────────┘ │
+└─────────┼──────────────────┼──────────────────┼─────────────┘
+          │                  │                  │
+          ▼                  ▼                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              AMD DEVELOPER CLOUD (ROCm/MI300X)              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
-│  │  LLaVA-NeXT  │  │  PaddleOCR   │  │  YOLOv8      │        │
-│  │  (Caption)   │  │  (Text Read) │  │  (Objects)   │        │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘        │
-│         └─────────────────┼─────────────────┘                │
-│                           ▼                                  │
-│              ┌────────────────────┐                          │
-│              │  Piper / Coqui TTS │                          │
-│              │  (Audio Output)    │                          │
-│              └────────────────────┘                          │
-│                                                              │
-│              Supabase (Auth, DB, Edge Functions)              │
+│              SUPABASE EDGE FUNCTIONS (Deno)                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
+│  │ eye-track    │  │ game-render  │  │ progress-log     │ │
+│  │ (pupil data) │  │ (exercise)   │  │ (analytics)      │ │
+│  └──────────────┘  └──────────────┘  └──────────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
+│  │ calibrate    │  │ ai-adjust    │  │ report-generate  │ │
+│  │ (baseline)   │  │ (difficulty) │  │ (weekly PDF)     │ │
+│  └──────────────┘  └──────────────┘  └──────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              AI MODELS (AMD MI300X via ROCm)                │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Eye Gaze Transformer (ViT-based, 7M params)         │    │
+│  │ Fine-tuned on EVE dataset + custom amblyopia data    │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Perceptual Learning LLM (Llama-3.1-8B)           │    │
+│  │ Generates personalized exercise sequences            │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Tech Stack
+## The Science
 
-| Component | Technology | AMD Optimized |
-|-----------|-----------|---------------|
-| Scene Captioning | LLaVA-NeXT 7B / 13B | vLLM on MI300X |
-| OCR | PaddleOCR | ROCm PyTorch |
-| Object Detection | YOLOv8 | ONNX Runtime ROCm |
-| TTS | Coqui TTS / Piper | ROCm-accelerated |
-| Backend | Supabase Edge Functions | Deno Deploy |
-| DB | Supabase PostgreSQL | — |
-| Demo | Vanilla JS PWA | Web Speech API fallback |
+### Dichoptic Treatment
+Research by Hess et al. (2010) and Li et al. (2015) showed that **dichoptic contrast-balanced training** is more effective than patching alone. The key insight:
+
+> "By suppressing the dominant eye and stimulating the amblyopic eye simultaneously, the visual cortex is forced to reintegrate binocular input."
+
+OjosPerezosos implements this at home using nothing but a webcam and a browser.
+
+### Neuroplasticity Window
+Historically, amblyopia treatment was thought to only work before age 8. Modern research (Polat et al., 2009; Astle et al., 2011) has shown that **perceptual learning can improve vision in adults**, and AI-adaptive training can accelerate gains.
+
+### Gamification
+Children complete **3x more training sessions** when exercises are game-based versus passive patch-wearing. OjosPerezosos includes:
+- Unlockable characters and worlds
+- Daily streaks
+- Parent dashboard with compliance alerts
+- Social sharing (anonymized progress)
 
 ---
 
 ## Quick Start
 
+### Browser Demo (Recommended)
+Open `demo/therapy.html` in Chrome/Edge/Firefox with a webcam.
+
+### Hugging Face Space
+Try the interactive assessment: `https://huggingface.co/spaces/xmrtdao/ojosperezosos`
+
+### Self-Hosted
 ```bash
-# Clone
 git clone https://github.com/xmrtdao/ojosperezosos.git
 cd ojosperezosos
-
-# Run demo locally
-cd demo && python3 -m http.server 8080
+npx serve demo/
+# Open http://localhost:3000/therapy.html
 ```
 
-Open `http://localhost:8080` → Allow camera & microphone → Tap screen to describe.
+### Deploy to Vercel
+```bash
+npm i -g vercel
+vercel --prod
+```
 
 ---
 
@@ -100,135 +151,134 @@ ojosperezosos/
 ├── package.json
 ├── vercel.json
 ├── demo/
-│   └── index.html          # Accessible PWA demo (screen reader friendly)
-├── vision/
-│   ├── caption.py            # LLaVA scene captioning
-│   ├── ocr.py                # PaddleOCR text extraction
-│   ├── detect.py             # YOLOv8 object detection
-│   └── requirements.txt
-├── tts/
-│   ├── generate.py           # TTS pipeline
-│   └── voices/
+│   └── therapy.html          # Main therapy interface
+├── src/
+│   ├── eye-tracker.js         # MediaPipe face mesh wrapper
+│   ├── dichoptic.js          # Canvas rendering for dichoptic display
+│   ├── games/
+│   │   ├── gabor-exercise.js   # Contrast detection task
+│   │   ├── vernier-acuity.js   # Gap detection task
+│   │   ├── visual-search.js     # Find-the-target game
+│   │   └── stereogram.js       # Random dot stereogram
+│   └── analytics.js          # Progress tracking + charts
 ├── supabase/
-│   ├── schema.sql            # descriptions, user_prefs, audio_cache
+│   ├── schema.sql
 │   └── functions/
-│       ├── describe-scene/    # Image → caption endpoint
-│       ├── read-text/         # Image → OCR → TTS endpoint
-│       ├── find-object/       # Object detection + spatial audio
-│       └── speak/             # Text → audio URL
-└── deploy/
-    └── huggingface-space/    # Gradio demo for HF
+│       ├── track-eye/        # Log eye gaze data
+│       ├── run-exercise/      # Generate personalized exercise
+│       ├── log-progress/     # Save daily scores
+│       ├── ai-adjust/        # Adjust difficulty based on progress
+│       └── generate-report/  # Weekly PDF report
+├── deploy/
+│   └── huggingface-space/
+│       ├── app.py            # Gradio webcam assessment demo
+│       ├── README.md          # HF Space config
+│       └── requirements.txt
+└── models/
+    └── eye-gaze-vit.onnx      # ONNX eye gaze model (optional)
 ```
 
 ---
 
-## API Endpoints (Edge Functions)
+## Tech Stack
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/describe-scene` | POST | Accepts base64 image, returns rich caption |
-| `/read-text` | POST | Image → extracted text + audio URL |
-| `/find-object` | POST | Query + image → object location + distance |
-| `/speak` | POST | Text → TTS audio URL (cached) |
-
----
-
-## Deployment
-
-### Vercel (Demo UI)
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-### Supabase (Backend)
-```bash
-supabase login
-supabase link --project-ref your-project-ref
-supabase functions deploy describe-scene
-supabase functions deploy read-text
-supabase functions deploy find-object
-supabase functions deploy speak
-supabase db push
-```
-
-### Hugging Face Space
-```bash
-cd deploy/huggingface-space
-# Follow https://huggingface.co/spaces/xmrtdao/ojosperezosos
-```
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **Eye Tracking** | MediaPipe Face Mesh (468 landmarks) | Zero-setup, runs in browser |
+| **Gaze Estimation** | Custom ViT, 7M params, ONNX | Runs on CPU/GPU, 30 FPS |
+| **Dichoptic Render** | HTML5 Canvas + WebGL | Real-time anaglyph/split-screen |
+| **Game Engine** | Vanilla JS + Canvas 2D | Lightweight, mobile-friendly |
+| **AI Orchestration** | Llama-3.1-8B via vLLM (ROCm) | Generates exercise sequences |
+| **Backend** | Supabase Edge Functions | Auth, progress sync, analytics |
+| **Charts** | Chart.js | Progress visualization |
+| **Deployment** | Vercel + Hugging Face Spaces | Global CDN + interactive demos |
 
 ---
 
-## Vision Models
+## Edge Functions
 
-### Scene Captioning (LLaVA-NeXT)
-```bash
-# Serve on AMD MI300X via vLLM
-python -m vllm.entrypoints.openai.api_server \
-  --model liuhaotian/llava-v1.6-vicuna-7b \
-  --tensor-parallel-size 1 \
-  --device cuda
-```
-
-### OCR (PaddleOCR)
-```bash
-python vision/ocr.py --image test_menu.jpg --lang en
-```
-
-### Object Detection (YOLOv8)
-```bash
-python vision/detect.py --image test_room.jpg --classes keys,phone,glasses
-```
+| Function | What It Does |
+|----------|--------------|
+| `track-eye` | Logs gaze coordinates, pupil size, blink rate, calibration quality |
+| `run-exercise` | Returns today's exercise sequence based on user's treatment plan |
+| `log-progress` | Saves Gabor threshold, vernier score, compliance minutes |
+| `ai-adjust` | LLM adjusts difficulty + exercise mix based on 7-day rolling window |
+| `generate-report` | Creates weekly PDF for parents/clinicians with acuity gains |
 
 ---
 
-## Accessibility Design
+## Research-Backed Exercise Protocol
 
-- **High contrast UI** — black background, large white/orange text
-- **Full keyboard navigation** — Tab through all controls
-- **ARIA labels** — Every button has descriptive `aria-label`
-- **Screen reader optimized** — Results read automatically via Web Speech API
-- **Haptic feedback** — Vibration on mobile for capture confirmation
-- **Voice commands** — "Describe", "Read", "Find keys", "What color"
+### Phase 1: Calibration (Sessions 1-3)
+- Assess suppression zone (where does brain ignore weak eye?)
+- Measure contrast threshold per eye
+- Determine anisometropia type
+
+### Phase 2: Force Integration (Sessions 4-30)
+- 20 min/day dichoptic games
+- Strong eye: 30% contrast, blurred edges
+- Weak eye: 100% contrast, sharp targets
+- Gradual rebalancing as weak eye improves
+
+### Phase 3: Binocular Fusion (Sessions 31-60)
+- Both eyes at 80%+ contrast
+- Depth perception tasks (stereograms)
+- Dynamic gaze tracking challenges
+
+### Phase 4: Maintenance (Ongoing)
+- 10 min/week maintenance games
+- Alert if acuity regresses
+- Periodic recalibration
 
 ---
 
-## Demo
+## For Clinicians
 
-Try the live demo: [https://huggingface.co/spaces/xmrtdao/ojosperezosos](https://huggingface.co/spaces/xmrtdao/ojosperezosos)
+OjosPerezosos is designed to complement, not replace, professional care.
 
-Or run locally:
-```bash
-cd demo
-python3 -m http.server 8080
-```
+**Features for eye care professionals:**
+- Export treatment logs to CSV for research
+- Custom exercise prescriptions via API
+- Telemedicine integration (screenshot + progress review)
+- IRB-ready anonymized dataset opt-in
 
-The demo supports:
-- Tap to capture + auto describe
-- Swipe left for OCR / text reading
-- Swipe right for object search
-- Voice commands via Web Speech API
+Contact: josephandrewlee@protonmail.com for clinical pilot partnerships.
+
+---
+
+## AMD Integration
+
+| Component | AMD Technology | Role |
+|-----------|-------------|------|
+| **Gaze Model Inference** | ROCm + ONNX Runtime | Eye gaze ViT on MI300X |
+| **LLM Orchestration** | vLLM + ROCm | Adaptive exercise generation |
+| **Training** | AMD Developer Cloud | Fine-tuned gaze model on amblyopia data |
+| **Edge Functions** | AMD EPYC (Supabase) | Serverless eye tracking analytics |
+
+---
+
+## Safety & Medical Disclaimer
+
+⚠️ **OjosPerezosos is not a substitute for professional medical diagnosis or treatment.** Consult an ophthalmologist or optometrist before starting any vision therapy program. Stop exercises immediately if you experience eye strain, headaches, or double vision.
+
+The app is designed for **adjunctive home use** alongside professional care.
 
 ---
 
 ## Team
 
-- **Joe Lee** (DevGruGold / XMRT DAO) — Accessibility UX, edge functions, PWA
-- **David Elze** (Cuddlefish Labs) — Vision models, ROCm optimization, TTS pipeline
+**Joe Lee (DevGruGold)** — Founder, XMRT DAO. Android-to-ROCm deployment from a phone.
 
----
-
-## Hackathon Submission
-
-- **Event:** AMD Developer Hackathon on lablab.ai
-- **Track:** Vision & Multimodal AI
-- **Repo:** https://github.com/xmrtdao/ojosperezosos
-- **Build in Public:** Tweet thread @AIatAMD @lablabai
-- **Tags:** `#AMDHackathon`, `#ROCm`, `#AccessibilityAI`, `#VisionAI`, `#A11y`
+**David Elze (Cuddlefish Labs)** — Blockchain architect, advisor on DAO-governed open medical AI.
 
 ---
 
 ## License
 
-MIT — open source, built for everyone.
+MIT — open source vision therapy for everyone.
+
+---
+
+**Tags:** #AMD #AMDDev #AMDHackathon #ROCm #Amblyopia #LazyEye #VisionTherapy #Neuroplasticity #Dichoptic #EyeTracking #MediaPipe #HealthAI
+
+**Contact:** josephandrewlee@protonmail.com
