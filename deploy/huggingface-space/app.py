@@ -1,128 +1,222 @@
 """
-OjosPerezosos — Hugging Face Space
-Multimodal Accessibility Vision Assistant for low-vision users.
-Standalone demo with rich fallback data (no backend required).
+OjosPerezosos — Amblyopia (Lazy Eye) Therapy
+Hugging Face Space Gradio Demo
+Built for AMD Developer Hackathon — Track 3: Vision & Multimodal AI
 """
 
 import gradio as gr
 import random
+import time
+import base64
 
-# Demo captions by detail level
-DEMO_CAPTIONS = {
-    "brief": [
-        "A kitchen with a wooden table, fruit bowl, and window.",
-        "A living room with a sofa, TV, and coffee table.",
-        "A street scene with cars, buildings, and pedestrians."
-    ],
-    "standard": [
-        "A well-lit kitchen with a wooden dining table, a ceramic bowl of fresh fruit, and a large window showing a garden view. The walls are painted white and there's a modern pendant light.",
-        "A cozy living room with a grey fabric sofa facing a wall-mounted TV, a wooden coffee table with magazines, and a floor lamp in the corner. Soft afternoon light fills the room.",
-        "A busy urban street with parked cars, three-story brick buildings with shopfronts at ground level, and pedestrians walking on the sidewalk under leafy trees."
-    ],
-    "rich": [
-        "A bright, inviting kitchen bathed in warm afternoon sunlight streaming through a large bay window that overlooks a lush green garden. The centerpiece is a rustic oak dining table with visible grain, set with a handmade ceramic bowl brimming with fresh seasonal fruit. Above the table hangs a sleek matte-black pendant lamp with an Edison bulb casting a warm glow. White walls create a clean backdrop, while a potted rosemary plant on the windowsill adds living green. The mood is cozy and welcoming.",
-        "A comfortable living room designed for relaxation. A plush grey fabric sofa with throw pillows faces a wall-mounted 55-inch TV showing a paused nature documentary. A mid-century modern walnut coffee table holds a stack of magazines and a ceramic mug. A brass floor lamp with a linen shade stands in the corner. Sunlight filters through sheer curtains. A woven jute rug covers hardwood floors, and a bookshelf filled with novels lines the far wall.",
-        "A vibrant city street on a sunny afternoon. Parked cars line both sides — a mix of sedans and compact SUVs. Three-story red-brick buildings house ground-floor cafes and boutiques with large glass windows. Pedestrians stroll the wide sidewalk: a parent with a stroller, a cyclist waiting at a light, and two people chatting outside a coffee shop. Mature oak trees provide dappled shade. Traffic lights and street signs mark the intersection ahead."
-    ]
+# Treatment phase state
+SESSION_STATE = {
+    "phase": "phase2",
+    "weak_eye": "left",
+    "contrast_ratio": 0.3,
+    "streak": 12,
+    "gabor_best": 0.084,
+    "vernier_best": 1.2,
+    "sessions_total": 34,
 }
 
-DEMO_OCR = [
-    "Welcome to The Garden Cafe. Today's specials: Truffle Mushroom Risotto $18, Grilled Salmon with Asparagus $22, Lemon Tart $9. Open 8 AM — 10 PM.",
-    "EXIT →  Emergency Exit Only. Alarm will sound if opened.",
-    "Metro Line 3 — Next train to Downtown in 4 minutes. Platform B.",
-    "Prescription: Amoxicillin 500mg. Take one capsule three times daily for 7 days."
+DEMO_EXERCISES = [
+    {"name": "Fixation Stability", "duration": 120, "type": "gaze"},
+    {"name": "Saccade Tracking", "duration": 120, "type": "follow"},
+    {"name": "Gabor Contrast Match", "duration": 180, "type": "gabor"},
+    {"name": "Pursuit Smoothness", "duration": 120, "type": "smooth"},
+    {"name": "Vernier Acuity", "duration": 180, "type": "vernier"},
+    {"name": "Random Dot Stereogram", "duration": 150, "type": "stereogram"},
 ]
 
-DEMO_FIND = {
-    "keys": [
-        "keys — 94% confidence, located at bottom left of image",
-        "phone — 88% confidence, located at center right"
-    ],
-    "phone": [
-        "phone — 91% confidence, located at center",
-        "charger — 73% confidence, located at top left"
-    ],
-    "glasses": [
-        "glasses — 89% confidence, located at top right",
-        "book — 76% confidence, located at center"
-    ],
-    "wallet": [
-        "wallet — 92% confidence, located at bottom center",
-        "keys — 85% confidence, located at left edge"
-    ],
-    "": [
-        "laptop — 96% confidence, located at center",
-        "mug — 85% confidence, located at right",
-        "notebook — 79% confidence, located at bottom left"
-    ]
-}
+def get_calibration():
+    """Simulate 9-point eye calibration."""
+    return {
+        "dominant_eye": random.choice(["Right", "Left"]),
+        "gaze_stability": f"{82 + random.random()*14:.1f}%",
+        "calibrated": True,
+    }
 
-def describe_image(image, detail_level):
-    """Simulate LLaVA-Next scene captioning."""
-    if image is None:
-        return "Please upload an image to describe."
-    captions = DEMO_CAPTIONS.get(detail_level, DEMO_CAPTIONS["standard"])
-    return random.choice(captions)
+def generate_session_plan(weak_eye, contrast, duration):
+    """Return today's exercise queue."""
+    # Pick 4-5 exercises based on phase (always include fixation + gabor)
+    selected = [DEMO_EXERCISES[0], DEMO_EXERCISES[2]]
+    selected += random.sample(DEMO_EXERCISES[1:] + DEMO_EXERCISES[3:], k=min(3, len(DEMO_EXERCISES)-2))
+    total_min = sum(e["duration"] for e in selected) / 60
+    return selected, total_min
 
-def read_text_from_image(image):
-    """Simulate PaddleOCR text reading."""
-    if image is None:
-        return "Please upload an image containing text."
-    return random.choice(DEMO_OCR)
+def run_exercise(exercise_name):
+    """Simulate one exercise with animated Gabor/stereogram frames (returned as video/list)."""
+    if exercise_name == "Gabor Contrast Match":
+        return "🎛️ Gabor patch rendered. Patient matched contrast threshold at 0.084."
+    elif exercise_name == "Vernier Acuity":
+        return "📏 Vernier gap task complete. Minimum gap detected: 1.2 arcmin."
+    elif exercise_name == "Random Dot Stereogram":
+        return "🧠 Stereogram depth fused in 4.2s. Binocular integration improving."
+    else:
+        return f"✅ {exercise_name} complete — accuracy: {85 + int(random.random()*14)}%"
 
-def find_objects(image, query):
-    """Simulate YOLOv8 object detection with spatial audio feedback text."""
-    if image is None:
-        return "Please upload an image to search."
-    q = query.strip().lower()
-    results = DEMO_FIND.get(q, DEMO_FIND[""])
-    return "\n".join(results)
+def get_weekly_stats():
+    s = SESSION_STATE
+    return f"""📊 7-Day Progress
+• Sessions: {s['sessions_total']}
+• Best Gabor threshold: {s['gabor_best']:.3f} (↓ means better)
+• Best Vernier score: {s['vernier_best']:.1f} arcmin
+• Session streak: {s['streak']} days
+• Compliance: Good (5+ sessions/week)
+"""
 
-with gr.Blocks(title="OjosPerezosos — AI Vision Assistant") as demo:
+def generate_report():
+    s = SESSION_STATE
+    return f"""# Weekly Therapy Report
+
+**Patient ID:** demo-user
+**Period:** Last 7 days
+**Generated:** {time.strftime('%Y-%m-%d %H:%M')}
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Sessions Completed | 6 |
+| Total Therapy Time | 132 min |
+| Avg Session Duration | 22.0 min |
+| Best Gabor Threshold | {s['gabor_best']:.3f} |
+| Best Vernier Score | {s['vernier_best']:.1f} arcmin |
+
+## Compliance
+
+✅ Good compliance — 5+ sessions this week.
+
+## Recommended Next Week
+
+• Continue 20–30 min daily sessions.
+• Schedule a follow-up eye exam in 2–4 weeks if not recently done.
+• If headaches occur, reduce contrast ratio by 10%.
+"""
+
+def therapy_interface(weak_eye, contrast, session_min):
+    """Main therapy session runner."""
+    contrast_val = contrast / 100.0
+    SESSION_STATE["weak_eye"] = weak_eye
+    SESSION_STATE["contrast_ratio"] = contrast_val
+
+    cal = get_calibration()
+    exercises, total_min = generate_session_plan(weak_eye, contrast_val, session_min)
+
+    plan_md = f"""## 🎯 Today's Treatment Plan
+
+**Weak Eye:** {weak_eye.title()}
+**Contrast Ratio:** Strong eye gets {int(contrast)}% contrast
+**Est. Duration:** {total_min:.0f} minutes
+**Dominant Eye:** {cal['dominant_eye']}
+**Gaze Stability:** {cal['gaze_stability']}
+
+### Exercises:
+"""
+    for i, ex in enumerate(exercises, 1):
+        plan_md += f"{i}. **{ex['name']}** ({ex['duration']}s) — {ex['type']}\n"
+
+    plan_md += "\n---\n"
+    return plan_md
+
+def start_session(exercises_md):
+    """Run through mock exercises and return results."""
+    lines = ["## 🏃 Session Started\n"]
+    for ex in DEMO_EXERCISES[:5]:
+        lines.append(run_exercise(ex["name"]))
+        time.sleep(0.05)  # simulate processing
+    lines.append("\n✅ Session complete! Progress saved.")
+    SESSION_STATE["sessions_total"] += 1
+    return "\n".join(lines)
+
+def generate_hf_image(weak_eye, contrast):
+    """Simulate dichoptic training image per eye (renders text-based diagram)."""
+    c = int(contrast)
+    strong = "right" if weak_eye == "left" else "left"
+    ascii_art = f"""
+╔══════════════════════════════════════╗
+║   DICHOPTIC TRAINING DISPLAY         ║
+╠══════════════════════════════════════╣
+║                                      ║
+║   {weak_eye.upper()} EYE (WEAK)         {strong.upper()} EYE (STRONG)
+║   ████████████████████               ║
+║   ████████  TARGET  ████           ║
+║   ████████  ██████  ████           ║
+║   ████████  ██████  ████           ║
+║   ████████████████████               ║
+║   Contrast: {100-c:3d}%            Contrast: {c:3d}%
+║   Sharp edges        Blurred edges   ║
+║   ↓ weaker eye       ↓ stronger eye║
+║   gets stimulation   gets blur     ║
+║                                      ║
+╚══════════════════════════════════════╝
+    """
+    return ascii_art
+
+# ─── GRADIO UI ──────────────────────────────────────────
+
+with gr.Blocks(title="OjosPerezosos — Amblyopia Therapy") as demo:
     gr.Markdown("""
-    # OjosPerezosos
-    ## Multimodal Accessibility Vision Assistant
+    # OjosPerezosos 👁️
+    ## Neuroplasticity-Based Amblyopia (Lazy Eye) Therapy
     **AMD Developer Hackathon 2026 — Track 3: Vision & Multimodal AI**
 
-    Upload an image and the AI will describe it, read text from it, or find objects for you.
-    Designed for low-vision users with full accessibility support.
+    AI-powered dichoptic training you can do at home, using just your webcam and browser.
     """)
 
-    with gr.Tab("Describe Scene"):
+    with gr.Tab("🗓️ Plan Session"):
         with gr.Row():
             with gr.Column():
-                img_input = gr.Image(type="pil", label="Upload image")
-                detail = gr.Radio(["brief", "standard", "rich"], value="standard", label="Detail Level")
-                describe_btn = gr.Button("Describe", variant="primary")
+                weak_eye_ui = gr.Dropdown(["left", "right"], value="left", label="Amblyopic (Weaker) Eye")
+                contrast_ui = gr.Slider(10, 90, value=30, step=5, label="Strong Eye Contrast %")
+                session_min_ui = gr.Slider(5, 45, value=20, step=5, label="Target Duration (min)")
+                plan_btn = gr.Button("Generate Plan", variant="primary")
             with gr.Column():
-                describe_output = gr.Textbox(label="Scene Description", lines=8)
-        describe_btn.click(fn=describe_image, inputs=[img_input, detail], outputs=describe_output)
+                plan_output = gr.Markdown()
+        plan_btn.click(therapy_interface, inputs=[weak_eye_ui, contrast_ui, session_min_ui], outputs=plan_output)
 
-    with gr.Tab("Read Text (OCR)"):
+    with gr.Tab("👁️ Dichoptic Display"):
+        gr.Markdown("This simulates what each eye sees during dichoptic training.")
         with gr.Row():
-            with gr.Column():
-                ocr_img = gr.Image(type="pil", label="Upload image with text")
-                ocr_btn = gr.Button("Read Text", variant="primary")
-            with gr.Column():
-                ocr_output = gr.Textbox(label="Extracted Text", lines=6)
-        ocr_btn.click(fn=read_text_from_image, inputs=ocr_img, outputs=ocr_output)
+            disp_weak = gr.Dropdown(["left", "right"], value="left", label="Weak Eye")
+            disp_contrast = gr.Slider(10, 90, value=30, step=5, label="Strong Eye Contrast %")
+            disp_btn = gr.Button("Render View")
+        disp_output = gr.Textbox(label="Display Schematic", lines=18, font=gr.themes.GoogleFont("Courier New"))
+        disp_btn.click(generate_hf_image, inputs=[disp_weak, disp_contrast], outputs=disp_output)
 
-    with gr.Tab("Find Objects"):
-        with gr.Row():
-            with gr.Column():
-                find_img = gr.Image(type="pil", label="Upload image")
-                find_query = gr.Textbox(label="What to find (optional)", placeholder="keys, phone, glasses, wallet...")
-                find_btn = gr.Button("Find Objects", variant="primary")
-            with gr.Column():
-                find_output = gr.Textbox(label="Results", lines=6)
-        find_btn.click(fn=find_objects, inputs=[find_img, find_query], outputs=find_output)
+    with gr.Tab("🏃 Run Session"):
+        session_btn = gr.Button("Start Simulated Session", variant="primary")
+        session_out = gr.Textbox(label="Session Log", lines=12)
+        session_btn.click(start_session, inputs=[gr.State()], outputs=session_out)
 
-    gr.Markdown("""
-    ---
-    **Powered by:** LLaVA-Next (scene captioning), PaddleOCR (text reading), YOLOv8 (object detection), ROCm vLLM (AMD MI300X)
-    **Team:** Joe Lee (DevGruGold / XMRT DAO) + David Elze (Cuddlefish Labs)
-    **Accessibility:** Keyboard navigation, ARIA labels, screen-reader optimized
-    """)
+    with gr.Tab("📊 Progress"):
+        stats_btn = gr.Button("Show Weekly Stats", variant="secondary")
+        stats_out = gr.Textbox(label="Stats", lines=8)
+        stats_btn.click(get_weekly_stats, outputs=stats_out)
+
+    with gr.Tab("📄 Report"):
+        report_btn = gr.Button("Generate Weekly Report", variant="secondary")
+        report_md = gr.Markdown()
+        report_btn.click(generate_report, outputs=report_md)
+
+    with gr.Tab("ℹ️ About"):
+        gr.Markdown("""
+        **OjosPerezosos** (Spanish for "lazy eyes") is an amblyopia therapy app that uses dichoptic contrast-balanced training to stimulate the visual cortex.
+
+        ### The Science
+        - **Dichoptic Treatment:** Degrade the strong eye's image while presenting full contrast to the weak eye. Forces the brain to reintegrate binocular input.
+        - **Neuroplasticity:** Adults can improve visual acuity through perceptual learning. AI-adaptive difficulty accelerates gains.
+        - **Gamification:** Game-based exercises have **3x higher compliance** than eye patching.
+
+        ### Safety
+        ⚠️ This is a demo. **Always consult an ophthalmologist before starting vision therapy.**
+
+        ---
+        **Team:** Joe Lee (DevGruGold / XMRT DAO) + David Elze (Cuddlefish Labs)
+        **Powered by:** AMD MI300X ROCm, Gradio, Supabase
+        **Repo:** github.com/xmrtdao/ojosperezosos
+        """)
 
 if __name__ == "__main__":
     demo.launch()
