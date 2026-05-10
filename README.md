@@ -2,6 +2,11 @@
 
 **Multimodal AI Vision Assistant for Accessibility**
 
+[![AMD Developer Hackathon](https://img.shields.io/badge/AMD-Hackathon%202026-ED1C24?logo=amd)](https://lablab.ai/ai-hackathons/amd-developer)
+[![Track](https://img.shields.io/badge/Track-Vision%20%26%20Multimodal%20AI-blue)]()
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Repo](https://img.shields.io/badge/GitHub-xmrtdao%2Fojosperezosos-black?logo=github)](https://github.com/xmrtdao/ojosperezosos)
+
 > "Your eyes when you need a rest — an AI that sees, reads, and describes the world aloud."
 
 OjosPerezosos ("Lazy Eyes") is a multimodal accessibility assistant built for the AMD Developer Hackathon (Vision & Multimodal AI track). It helps users with visual fatigue, low vision, or temporary eye strain by describing scenes, reading text from images, and providing audio-guided navigation — all powered by AMD ROCm-accelerated vision and language models.
@@ -91,6 +96,9 @@ Open `http://localhost:8080` → Allow camera & microphone → Tap screen to des
 ```
 ojosperezosos/
 ├── README.md
+├── LICENSE
+├── package.json
+├── vercel.json
 ├── demo/
 │   └── index.html          # Accessible PWA demo (screen reader friendly)
 ├── vision/
@@ -122,7 +130,33 @@ ojosperezosos/
 | `/read-text` | POST | Image → extracted text + audio URL |
 | `/find-object` | POST | Query + image → object location + distance |
 | `/speak` | POST | Text → TTS audio URL (cached) |
-| `/safety-scan` | POST | Image → obstacle/warning list |
+
+---
+
+## Deployment
+
+### Vercel (Demo UI)
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+### Supabase (Backend)
+```bash
+supabase login
+supabase link --project-ref your-project-ref
+supabase functions deploy describe-scene
+supabase functions deploy read-text
+supabase functions deploy find-object
+supabase functions deploy speak
+supabase db push
+```
+
+### Hugging Face Space
+```bash
+cd deploy/huggingface-space
+# Follow https://huggingface.co/spaces/xmrtdao/ojosperezosos
+```
 
 ---
 

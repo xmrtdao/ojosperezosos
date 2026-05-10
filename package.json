@@ -1,0 +1,28 @@
+{
+  "name": "ojosperezosos",
+  "version": "1.0.0",
+  "description": "Multimodal AI accessibility vision assistant for AMD Developer Hackathon",
+  "scripts": {
+    "dev": "python3 -m http.server 8080 --directory demo",
+    "build": "echo 'Static deployment - no build step required'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "ai",
+    "vision",
+    "multimodal",
+    "accessibility",
+    "a11y",
+    "amd",
+    "rocm",
+    "hackathon",
+    "ocr",
+    "tts"
+  ],
+  "author": "XMRT DAO",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xmrtdao/ojosperezosos.git"
+  }
+}
