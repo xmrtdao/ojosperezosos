@@ -135,6 +135,9 @@ npx serve demo/
 # Open http://localhost:3000/therapy.html
 ```
 
+
+![Architecture Diagram](https://raw.githubusercontent.com/xmrtdao/ojosperezosos/main/architecture.svg)
+*Detailed system pipeline — view full resolution in browser*
 ### Deploy to Vercel
 ```bash
 npm i -g vercel
